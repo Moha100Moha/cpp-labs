@@ -9,7 +9,7 @@ on:
       - feature/github_actions
 
 jobs:
-  build: #Один job с именем build. Он идёт на виртуальной машине с Ubuntu
+  build-linux: #Один job с именем build. Он идёт на виртуальной машине с Ubuntu
     runs-on: ubuntu-latest 
     permissions: write-all #даёт Actions право создавать релизы.
     steps:
