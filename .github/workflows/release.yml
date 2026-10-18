@@ -1,19 +1,18 @@
-name: 'C++ CI' #Название workflow, оно отображается во вкладке Actions.
-
-#Когда запускать: при каждом push в ветки main и feature/github_actions. Это выполняет требование "сборка на каждый commit".
+name: 'C++ CI'
 
 on:
-  push: 
+  push:
     branches:
       - main
       - feature/github_actions
 
+permissions: write-all
+
 jobs:
-  build-linux: #Один job с именем build. Он идёт на виртуальной машине с Ubuntu
-    runs-on: ubuntu-latest 
-    permissions: write-all #даёт Actions право создавать релизы.
+  build-ubuntu:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3  #Скачивает код твоего repo на виртуальную машину
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - run: sudo apt-get update && sudo apt-get install libboost-test-dev -y
@@ -22,27 +21,11 @@ jobs:
       - run: ./helloworld_cli
       - run: cmake --build . --target test
       - run: cmake --build . --target package
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{ github.run_number }} #это номер запуска workflow (1, 2, 3...). Он увеличивается сам при каждом push. Именно он и становится N
-          release_name: Release ${{ github.run_number }}
-          draft: false
-          prerelease: false
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    #это безопасный способ дать доступ 
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./helloworld-1.0.${{ github.run_number }}-Linux.deb
-          asset_name: helloworld-1.0.${{ github.run_number }}-Linux.deb
-          asset_content_type: application/vnd.debian.binary-package
-  
+          name: deb-package
+          path: ./helloworld-1.0.${{ github.run_number }}-Linux.deb
+
   build-macos:
     runs-on: macos-latest
     steps:
@@ -54,3 +37,30 @@ jobs:
       - run: cmake --build .
       - run: ./helloworld_cli
       - run: cmake --build . --target test
+
+  create-release:
+    needs: [build-ubuntu, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: deb-package
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./helloworld-1.0.${{ github.run_number }}-Linux.deb
+          asset_name: helloworld-1.0.${{ github.run_number }}-Linux.deb
+          asset_content_type: application/vnd.debian.binary-package
