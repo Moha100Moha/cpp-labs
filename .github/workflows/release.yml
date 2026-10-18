@@ -38,7 +38,7 @@ jobs:
       - run: ./helloworld_cli
       - run: cmake --build . --target test
 
-    build-ubuntu-22:
+  build-ubuntu-22:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
