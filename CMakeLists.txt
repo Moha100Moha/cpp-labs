@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(PATCH_VERSION "1" CACHE INTERNAL "Patch version")
+if(NOT DEFINED PATCH_VERSION)
+  set(PATCH_VERSION 1)
+endif()
 set(PROJECT_VESRION 1.0.${PATCH_VERSION})
 
 project(helloworld VERSION ${PROJECT_VESRION})
@@ -20,11 +22,12 @@ set_target_properties(helloworld_cli helloworld test_version PROPERTIES
 target_include_directories(helloworld
     PRIVATE "${CMAKE_BINARY_DIR}"
 )
+if(NOT WIN32)
+    target_compile_definitions(test_version PRIVATE BOOST_TEST_DYN_LINK)
+endif()
 set_target_properties(test_version PROPERTIES
-    COMPILE_DEFINITIONS BOOST_TEST_DYN_LINK
     INCLUDE_DIRECTORIES ${Boost_INCLUDE_DIR}
 )
-
 target_link_libraries(helloworld_cli PRIVATE
     helloworld
 )
@@ -72,3 +75,7 @@ include(CPack)
 enable_testing()
 
 add_test(test_version test_version)
+
+if(NOT DEFINED PATCH_VERSION)
+  set(PATCH_VERSION 1)
+endif()
